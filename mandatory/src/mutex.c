@@ -119,25 +119,19 @@ dec_mutex(void *arg __attribute__((unused)))
                       Test 2 - Spinlock with test-and-set
 *******************************************************************************/
 
-void spin_lock()
-{
-    /* TODO: Implement the lock operation for a test-and-set spinlock. */
-    while (__sync_lock_test_and_set(&lock, true))
-    {
-    };
+void spin_lock() {
+  while (__sync_lock_test_and_set(&lock, true));
 }
 
-void spin_unlock()
-{
-    /* TODO: Implement the unlock operation for a test-and-set spinlock. */
-    __sync_lock_release(&lock, false);
+void spin_unlock() {
+  __sync_lock_release(&lock, false);
 }
 
 /* Increments of the shared counter should be protected by a test-and-set spinlock */
 void *
 inc_tas_spinlock(void *arg __attribute__((unused)))
 {
-    int i;
+  int i;
 
     for (i = 0; i < INC_ITERATIONS; i++)
     {
@@ -147,14 +141,14 @@ inc_tas_spinlock(void *arg __attribute__((unused)))
         spin_unlock();
     }
 
-    return NULL;
+  return NULL;
 }
 
 /* Decrements of the shared counter should be protected by a test-and-set spinlock */
 void *
 dec_tas_spinlock(void *arg __attribute__((unused)))
 {
-    int i;
+  int i;
 
     for (i = 0; i < DEC_ITERATIONS; i++)
     {
@@ -164,7 +158,7 @@ dec_tas_spinlock(void *arg __attribute__((unused)))
         spin_unlock();
     }
 
-    return NULL;
+  return NULL;
 }
 
 /*******************************************************************************
@@ -175,32 +169,28 @@ dec_tas_spinlock(void *arg __attribute__((unused)))
 void *
 inc_atomic(void *arg __attribute__((unused)))
 {
-    int i;
+  int i;
 
-    for (i = 0; i < INC_ITERATIONS; i++)
+  for (i = 0; i < INC_ITERATIONS; i++)
     {
-        /* TODO: Use atomic addition to increment the shared counter */
-
-        __sync_fetch_and_add(&counter, INCREMENT);
+      __sync_fetch_and_add(&counter, INCREMENT);
     }
 
-    return NULL;
+  return NULL;
 }
 
 /* Decrement the shared counter using an atomic increment instruction */
 void *
 dec_atomic(void *arg __attribute__((unused)))
 {
-    int i;
+  int i;
 
-    for (i = 0; i < DEC_ITERATIONS; i++)
+  for (i = 0; i < DEC_ITERATIONS; i++)
     {
-        /* TODO: Use atomic subtraction to increment the shared counter */
-
-        __sync_fetch_and_sub(&counter, DECREMENT);
+      __sync_fetch_and_sub(&counter, DECREMENT);
     }
 
-    return NULL;
+  return NULL;
 }
 
 /*******************************************************************************
