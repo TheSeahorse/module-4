@@ -89,9 +89,9 @@ inc_mutex(void *arg __attribute__((unused)))
         The pthread_mutex_lock() routine is used by a thread to acquire a lock on the specified mutex variable. 
         If the mutex is already locked by another thread, this call will block the calling thread until the mutex is unlocked.
         */
-        pthread_mutex_lock(&mutex);
-        counter += INCREMENT;
-        pthread_mutex_unlock(&mutex);
+        pthread_mutex_lock(&mutex); // Locks
+        counter += INCREMENT; // Critial section
+        pthread_mutex_unlock(&mutex); // Unlocks
     }
 
     return NULL;
@@ -107,9 +107,9 @@ dec_mutex(void *arg __attribute__((unused)))
     {
         /* TODO: Protect access to the shared variable counter with a mutex lock
          * inside the loop. */
-        pthread_mutex_lock(&mutex);
-        counter -= DECREMENT;
-        pthread_mutex_unlock(&mutex);
+        pthread_mutex_lock(&mutex); // Locks
+        counter -= DECREMENT; // Critical section
+        pthread_mutex_unlock(&mutex); // Unlocks
     }
 
     return NULL;
@@ -120,7 +120,8 @@ dec_mutex(void *arg __attribute__((unused)))
 *******************************************************************************/
 
 void spin_lock() {
-  while (__sync_lock_test_and_set(&lock, true));
+    // The calling operation obtains the lock if false, otherwise the while-loop "spins" waiting to acquire the lock before entering the critical section
+  while (__sync_lock_test_and_set(&lock, true)); // Sets to true and returns the previous value
 }
 
 void spin_unlock() {
@@ -136,9 +137,9 @@ inc_tas_spinlock(void *arg __attribute__((unused)))
     for (i = 0; i < INC_ITERATIONS; i++)
     {
         /* TODO: Add the spin_lock() and spin_unlock() operations inside the loop. */
-        spin_lock(); // While loop
-        counter += INCREMENT;
-        spin_unlock();
+        spin_lock(); // While loop if locked (i.e. it returns the previous value which then is true)
+        counter += INCREMENT; // Critial section
+        spin_unlock(); // "Unlocks", releases, the lock by setting it to false
     }
 
   return NULL;
@@ -153,9 +154,9 @@ dec_tas_spinlock(void *arg __attribute__((unused)))
     for (i = 0; i < DEC_ITERATIONS; i++)
     {
         /* TODO: Add the spin_lock() and spin_unlock() operations inside the loop. */
-        spin_lock();
+        spin_lock(); // The while loop which will continue if true
         counter -= DECREMENT;
-        spin_unlock();
+        spin_unlock(); // Releases the lock
     }
 
   return NULL;
@@ -166,6 +167,9 @@ dec_tas_spinlock(void *arg __attribute__((unused)))
 *******************************************************************************/
 
 /* Increment the shared counter using an atomic increment instruction */
+// From docu: 
+// These built-in functions perform the operation suggested by the name, and returns the value that had previously been in memory
+
 void *
 inc_atomic(void *arg __attribute__((unused)))
 {
@@ -173,7 +177,7 @@ inc_atomic(void *arg __attribute__((unused)))
 
   for (i = 0; i < INC_ITERATIONS; i++)
     {
-      __sync_fetch_and_add(&counter, INCREMENT);
+      __sync_fetch_and_add(&counter, INCREMENT); // Atomic add
     }
 
   return NULL;
@@ -187,7 +191,7 @@ dec_atomic(void *arg __attribute__((unused)))
 
   for (i = 0; i < DEC_ITERATIONS; i++)
     {
-      __sync_fetch_and_sub(&counter, DECREMENT);
+      __sync_fetch_and_sub(&counter, DECREMENT); // Atomic sub
     }
 
   return NULL;
@@ -411,3 +415,46 @@ int main()
 
     exit(EXIT_SUCCESS);
 }
+
+/***
+ * Explain the following concepts and relate them to the source code and the behaviour of the program.
+
+Q: Critical section.
+Concurrent access to a shared resource can lead to unexpected results. So parts where the shared resoruces is accessed
+is protected. This is called the critial section.
+
+Q: Mutual exclusion (mutex).
+One thread never enters the critical section while another concurrent thread enter its critical section
+
+Q: Race condition.
+The behaviour in which the output is dependent on the sequence or timing of other uncontrollable events
+
+Q: Data race.
+A data race occurs when two instructions from different threads access the same memory location and:
+
+* at least one of these accesses is a write
+* and there is no synchronization that is mandating any particular order among these accesses.
+
+Locks and semaphores:
+
+Q: What is the purose of mutex locks?
+To make sure that only one thread enter its critial section to access shared resources at a time. 
+This is to prevent race condition.
+
+Q: If yoy had to make a choice between using a sempahore or a mutex to enforce mutex, what would you recommend and why?
+Well. Mutex is good when we have a resource that only one thread should be able to access at a time since only
+the process that acquires the lock can release it?
+
+Q: How do you consruct a spinlock using the atomic test-and-set instruction?
+Well like we did here. We create a lock variable and then use the TAS instruction to atomically set it to true
+while also returning the previous value. This is done within a while-loop so if it is true when a thread tries
+to acquire it that thread will be stuck in the while loop until the owner releases it (i.e. sets it to false)
+
+This while loop should be placed before the critical section and the release after it. 
+
+
+Performance analysis:
+
+Discuss and analyze the results in test sumary table.
+ * 
+ * */
